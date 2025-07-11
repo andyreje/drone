@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<title>无人机跟随/伴随/聚焦模式演示 - 真全屏无遮挡</title>
+<style>
+  html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* 防止滚动 */
+    font-family: sans-serif;
+    background: #f0f4f8;
+    display: flex;
+    flex-direction: column;
+  }
+
+  h2 {
+    margin: 10px 0 5px 0;
+    text-align: center;
+    user-select: none;
+    flex-shrink: 0;
+  }
+
+  #modeButtons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 5px;
+    padding: 0 10px;
+    flex-shrink: 0;
+  }
+
+  .mode-btn { 
+    padding: 10px 20px; 
+    font-size: 16px; 
+    border: none; 
+    border-radius: 5px; 
+    cursor: pointer; 
+    background: #ddd;
+    color: #333;
+    transition: background-color 0.3s ease;
+  }
+  .mode-btn.active, .mode-btn:hover {
+    background: #0078d7;
+    color: white;
+  }
+
+  /* 主显示区域撑满剩余空间 */
+  #container {
+    position: relative;
+    flex-grow: 1;
+    background: #fff;
+    overflow: hidden;
+    margin: 0 10px;
+  }
+
+  .person {
+    position: absolute; 
+    width: 30px; height: 30px; border-radius: 50%;
+    background: #4caf50; color: white; 
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: bold; cursor: grab;
+    user-select: none;
+  }
+  .drone {
+    position: absolute; 
+    width: 40px; height: 40px;
+    background: url('无人机.png') no-repeat center center;
+    background-size: contain;
+    transform-origin: center;
+  }
+  .fov {
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    width: 0;
+    height: 0;
+    transform: translate(-50%, -50%) rotate(90deg);
+    border-left: 20px solid transparent;
+    border-right: 20px solid transparent;
+    border-top: 50px solid rgba(0, 255, 0, 0.25);
+    pointer-events: none;
+  }
+
+  /* 底部控制区域 */
+  #controlsContainer {
+    flex-shrink: 0;
+    display: flex;
+    gap: 30px;
+    justify-content: center;
+    flex-wrap: wrap;
+    max-width: 100%;
+    padding: 5px 10px 15px 10px;
+    background: #fff;
+    box-sizing: border-box;
+  }
+
+  #controls, #focusControls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    max-width: 300px;
+  }
+
+  .control-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  .control-btn { 
+    padding: 8px 15px; 
+    font-size: 16px; 
+    border: none; 
+    border-radius: 5px; 
+    background: #0078d7; 
+    color: white; 
+    cursor: pointer; 
+    user-select: none;
+    flex: 1 1 30%;
+    min-width: 60px;
+    transition: background-color 0.2s ease;
+  }
+  .control-btn:hover {
+    background: #005fa3;
+  }
+
+  @media (max-width: 600px) {
+    #controlsContainer {
+      flex-direction: column;
+      max-width: 100%;
+      gap: 15px;
+    }
+    .control-row {
+      flex-direction: column;
+    }
+  }
+</style>
+</head>
+<body>
+
+<h2>无人机跟随 / 伴随 / 聚焦 模式演示</h2>
+
+<div id="modeButtons">
+  <button id="followBtn" class="mode-btn active">跟随</button>
+  <button id="accompanyBtn" class="mode-btn">伴随</button>
+  <button id="focusBtn" class="mode-btn">聚焦</button>
+</div>
+
+<div id="container">
+  <div class="person" id="person">人</div>
+  <div class="drone" id="drone">
+    <div class="fov"></div>
+  </div>
+</div>
+
+<div id="controlsContainer">
+  <div id="controls">
+    <div class="control-row">
+      <button class="control-btn" id="btnUp">⬆ 人上</button>
+    </div>
+    <div class="control-row">
+      <button class="control-btn" id="btnLeft">⬅ 人左</button>
+      <button class="control-btn" id="btnRight">➡ 人右</button>
+    </div>
+    <div class="control-row">
+      <button class="control-btn" id="btnDown">⬇ 人下</button>
+    </div>
+  </div>
+
+  <div id="focusControls" style="display:none;">
+    <div class="control-row">
+      <button class="control-btn" id="droneUp">⬆ 无人机上</button>
+    </div>
+    <div class="control-row">
+      <button class="control-btn" id="droneLeft">⬅ 无人机左</button>
+      <button class="control-btn" id="droneRight">➡ 无人机右</button>
+    </div>
+    <div class="control-row">
+      <button class="control-btn" id="droneDown">⬇ 无人机下</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const container = document.getElementById('container');
+const person = document.getElementById('person');
+const drone = document.getElementById('drone');
+const followBtn = document.getElementById('followBtn');
+const accompanyBtn = document.getElementById('accompanyBtn');
+const focusBtn = document.getElementById('focusBtn');
+const focusControls = document.getElementById('focusControls');
+
+let mode = "跟随";
+let personPos = { x: 100, y: 100 };
+let dronePos = { x: 50, y: 50 };
+let dragging = false;
+let moveIntervals = {}, droneMoveIntervals = {};
+let orbitAngle = 0, orbitRadius = 100;
+let keysPressed = {};
+
+// 拖动人
+person.addEventListener('mousedown', () => { dragging = true; person.style.cursor = 'grabbing'; });
+document.addEventListener('mouseup', () => { dragging = false; person.style.cursor = 'grab'; });
+document.addEventListener('mousemove', (e) => {
+  if (dragging) {
+    const rect = container.getBoundingClientRect();
+    personPos.x = Math.min(rect.width - 30, Math.max(0, e.clientX - rect.left - 15));
+    personPos.y = Math.min(rect.height - 30, Math.max(0, e.clientY - rect.top - 15));
+  }
+});
+
+// 动画循环
+function animate() {
+  handleKeyboard();
+  moveDroneAuto();
+  updateDroneOrientation();
+  updatePositions();
+  requestAnimationFrame(animate);
+}
+
+function moveDroneAuto() {
+  if (mode === "跟随") {
+    const dx = personPos.x - dronePos.x;
+    const dy = personPos.y - dronePos.y;
+    const distance = Math.sqrt(dx*dx + dy*dy);
+    if (distance > 80) {
+      dronePos.x += (dx / distance) * (distance - 80) * 0.1;
+      dronePos.y += (dy / distance) * (distance - 80) * 0.1;
+    }
+  } else if (mode === "伴随") {
+    const targetX = personPos.x - 80;
+    const targetY = personPos.y - 80;
+    dronePos.x += (targetX - dronePos.x) * 0.08;
+    dronePos.y += (targetY - dronePos.y) * 0.08;
+  }
+}
+
+// 键盘操作
+document.addEventListener('keydown', e => keysPressed[e.key] = true);
+document.addEventListener('keyup', e => keysPressed[e.key] = false);
+
+function handleKeyboard() {
+  const step = 4;
+  if (keysPressed["ArrowUp"]) personPos.y = Math.max(0, personPos.y - step);
+  if (keysPressed["ArrowDown"]) personPos.y = Math.min(container.clientHeight - 30, personPos.y + step);
+  if (keysPressed["ArrowLeft"]) personPos.x = Math.max(0, personPos.x - step);
+  if (keysPressed["ArrowRight"]) personPos.x = Math.min(container.clientWidth - 30, personPos.x + step);
+
+  if (mode === "聚焦") {
+    let dx = dronePos.x - personPos.x;
+    let dy = dronePos.y - personPos.y;
+    orbitRadius = Math.max(50, Math.sqrt(dx*dx + dy*dy));
+    orbitAngle = Math.atan2(dy, dx);
+    if (keysPressed["a"] || keysPressed["A"]) orbitAngle -= 0.05;
+    if (keysPressed["d"] || keysPressed["D"]) orbitAngle += 0.05;
+    dronePos.x = personPos.x + orbitRadius * Math.cos(orbitAngle);
+    if (keysPressed["w"] || keysPressed["W"]) dronePos.y = Math.max(0, dronePos.y - step);
+    else if (keysPressed["s"] || keysPressed["S"]) dronePos.y = Math.min(container.clientHeight - 40, dronePos.y + step);
+    else dronePos.y = personPos.y + orbitRadius * Math.sin(orbitAngle);
+  }
+}
+
+function updateDroneOrientation() {
+  const dx = personPos.x - dronePos.x;
+  const dy = personPos.y - dronePos.y;
+  const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+  drone.style.transform = `rotate(${angle}deg)`;
+}
+
+function updatePositions() {
+  person.style.left = personPos.x + 'px';
+  person.style.top = personPos.y + 'px';
+  drone.style.left = dronePos.x + 'px';
+  drone.style.top = dronePos.y + 'px';
+}
+
+// 按钮控制
+function startContinuousMove(dir, isDrone=false) {
+  const step = 4;
+  stopContinuousMove(dir, isDrone);
+  const interval = setInterval(() => {
+    if (isDrone) {
+      let dx = dronePos.x - personPos.x;
+      let dy = dronePos.y - personPos.y;
+      orbitRadius = Math.max(50, Math.sqrt(dx*dx + dy*dy));
+      orbitAngle = Math.atan2(dy, dx);
+      if (dir === 'left') orbitAngle -= 0.05;
+      if (dir === 'right') orbitAngle += 0.05;
+      dronePos.x = personPos.x + orbitRadius * Math.cos(orbitAngle);
+      if (dir === 'up') dronePos.y = Math.max(0, dronePos.y - step);
+      else if (dir === 'down') dronePos.y = Math.min(container.clientHeight - 40, dronePos.y + step);
+      else dronePos.y = personPos.y + orbitRadius * Math.sin(orbitAngle);
+    } else {
+      if (dir === 'up') personPos.y = Math.max(0, personPos.y - step);
+      if (dir === 'down') personPos.y = Math.min(container.clientHeight - 30, personPos.y + step);
+      if (dir === 'left') personPos.x = Math.max(0, personPos.x - step);
+      if (dir === 'right') personPos.x = Math.min(container.clientWidth - 30, personPos.x + step);
+    }
+  }, 30);
+  if (isDrone) droneMoveIntervals[dir] = interval;
+  else moveIntervals[dir] = interval;
+}
+function stopContinuousMove(dir, isDrone=false) {
+  if (isDrone) clearInterval(droneMoveIntervals[dir]);
+  else clearInterval(moveIntervals[dir]);
+}
+
+// 人按钮
+['Up','Down','Left','Right'].forEach(dir=>{
+  const btn = document.getElementById('btn'+dir);
+  btn.onmousedown = ()=>startContinuousMove(dir.toLowerCase(), false);
+  btn.onmouseup = ()=>stopContinuousMove(dir.toLowerCase(), false);
+  btn.onmouseleave = ()=>stopContinuousMove(dir.toLowerCase(), false);
+});
+// 无人机按钮
+['Up','Down','Left','Right'].forEach(dir=>{
+  const btn = document.getElementById('drone'+dir);
+  btn.onmousedown = ()=>startContinuousMove(dir.toLowerCase(), true);
+  btn.onmouseup = ()=>stopContinuousMove(dir.toLowerCase(), true);
+  btn.onmouseleave = ()=>stopContinuousMove(dir.toLowerCase(), true);
+});
+
+// 模式切换
+followBtn.onclick = () => { mode="跟随"; updateModeUI(); }
+accompanyBtn.onclick = () => { mode="伴随"; updateModeUI(); }
+focusBtn.onclick = () => { mode="聚焦"; updateModeUI(); }
+function updateModeUI() {
+  followBtn.classList.toggle("active", mode==="跟随");
+  accompanyBtn.classList.toggle("active", mode==="伴随");
+  focusBtn.classList.toggle("active", mode==="聚焦");
+  focusControls.style.display = mode==="聚焦" ? "flex" : "none";
+}
+updateModeUI();
+animate();
+</script>
+
+</body>
+</html>
