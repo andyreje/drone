@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8" />
-<title>无人机跟随/伴随/聚焦模式演示 - 悬浮手柄 & 双摇杆</title>
+<title>无人机全屏悬浮控制 - 触摸支持 & 自适应</title>
 <style>
   html, body {
     width: 100%;
@@ -15,7 +15,6 @@
     position: relative;
   }
 
-  /* 悬浮标题 */
   h2 {
     position: absolute;
     top: 10px;
@@ -26,7 +25,6 @@
     z-index: 10;
   }
 
-  /* 悬浮模式切换 */
   #modeButtons {
     position: absolute;
     top: 50px;
@@ -51,7 +49,6 @@
     color: white;
   }
 
-  /* 人 & 无人机 */
   .person, .drone {
     position: absolute;
   }
@@ -81,7 +78,6 @@
     pointer-events: none;
   }
 
-  /* 悬浮底部控制 */
   #controlsContainer {
     position: absolute;
     bottom: 10px;
@@ -100,7 +96,6 @@
     font-size: 16px;
   }
 
-  /* 单手柄D-Pad */
   .dpad {
     display: grid;
     grid-template-columns: 50px 50px 50px;
@@ -131,6 +126,18 @@
   .control-btn:hover {
     background: linear-gradient(to bottom, #005fa3, #004080);
     box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+  }
+
+  @media (max-width: 600px) {
+    #controlsContainer { gap: 20px; }
+    .dpad {
+      grid-template-columns: 40px 40px 40px;
+      grid-template-rows: 40px 40px 40px;
+      gap: 6px;
+    }
+    .control-btn {
+      width: 40px; height: 40px; font-size: 18px;
+    }
   }
 </style>
 </head>
@@ -272,7 +279,6 @@ function updatePositions() {
   drone.style.top = dronePos.y + 'px';
 }
 
-// 手柄控制
 function startContinuousMove(dir, isDrone=false) {
   const step = 4;
   stopContinuousMove(dir, isDrone);
@@ -308,12 +314,18 @@ function stopContinuousMove(dir, isDrone=false) {
   btn.onmousedown = ()=>startContinuousMove(dir.toLowerCase(), false);
   btn.onmouseup = ()=>stopContinuousMove(dir.toLowerCase(), false);
   btn.onmouseleave = ()=>stopContinuousMove(dir.toLowerCase(), false);
+  btn.ontouchstart = (e)=>{ e.preventDefault(); startContinuousMove(dir.toLowerCase(), false); }
+  btn.ontouchend = ()=>stopContinuousMove(dir.toLowerCase(), false);
+  btn.ontouchcancel = ()=>stopContinuousMove(dir.toLowerCase(), false);
 });
 ['Up','Down','Left','Right'].forEach(dir=>{
   const btn = document.getElementById('drone'+dir);
   btn.onmousedown = ()=>startContinuousMove(dir.toLowerCase(), true);
   btn.onmouseup = ()=>stopContinuousMove(dir.toLowerCase(), true);
   btn.onmouseleave = ()=>stopContinuousMove(dir.toLowerCase(), true);
+  btn.ontouchstart = (e)=>{ e.preventDefault(); startContinuousMove(dir.toLowerCase(), true); }
+  btn.ontouchend = ()=>stopContinuousMove(dir.toLowerCase(), true);
+  btn.ontouchcancel = ()=>stopContinuousMove(dir.toLowerCase(), true);
 });
 
 followBtn.onclick = () => { mode="跟随"; updateModeUI(); }
@@ -322,9 +334,8 @@ focusBtn.onclick = () => { mode="聚焦"; updateModeUI(); }
 function updateModeUI() {
   followBtn.classList.toggle("active", mode==="跟随");
   accompanyBtn.classList.toggle("active", mode==="伴随");
-  focusBtn.classList.toggle("active", mode==="聚焦");
-  distanceContainer.style.display = (mode==="跟随"||mode==="伴随") ? "flex" : "none";
   focusControls.style.display = mode==="聚焦" ? "flex" : "none";
+  distanceContainer.style.display = (mode==="跟随"||mode==="伴随") ? "flex" : "none";
 }
 updateModeUI();
 animate();
