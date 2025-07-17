@@ -192,11 +192,11 @@ let moveIntervals = {}, droneMoveIntervals = {};
 let orbitAngle = 0, orbitRadius = 100;
 let followDistance = 150; // 默认改成150
 let keysPressed = {};
-const minSafeDistance =80;
+const minSafeDistance = 80;
 
 // 初始化滑动条范围及初始值
 distanceRange.min = 150;
-distanceRange.max = 200;
+distanceRange.max = 400;
 distanceRange.value = 150;
 distanceValue.innerText = followDistance;
 
@@ -234,20 +234,13 @@ function moveDroneAuto() {
     const movementMagnitude = Math.sqrt(vx * vx + vy * vy);
 
     if (distance < minSafeDistance && movementMagnitude > 0.5) {
-      // 计算人的运动方向（单位向量）
       const dirX = vx / movementMagnitude;
       const dirY = vy / movementMagnitude;
-
-      // 计算无人机相对于人运动方向的左右位置，决定避让方向
-      // 通过叉积判断无人机在人的左侧还是右侧
       const cross = dirX * (dronePos.y - personPos.y) - dirY * (dronePos.x - personPos.x);
-
-      // 避让角度垂直于人的运动方向，且根据叉积符号选择方向，避免随机抖动
       const avoidAngle = Math.atan2(-dirY, -dirX) + (cross > 0 ? -Math.PI / 2 : Math.PI / 2);
-
-      // 加大避让步长，并限制最大移动速度，避免跳跃过大
-      const avoidStep = Math.min(8, (minSafeDistance - distance) * 0.4);
-
+      let avoidStep = (minSafeDistance - distance) * 0.6;
+      const maxAvoidStep = 20;
+      if (avoidStep > maxAvoidStep) avoidStep = maxAvoidStep;
       dronePos.x += Math.cos(avoidAngle) * avoidStep;
       dronePos.y += Math.sin(avoidAngle) * avoidStep;
     } else if (distance > followDistance) {
@@ -363,8 +356,8 @@ function updateModeUI() {
 
   if (mode === "跟随") {
     distanceRange.min = 150;
-    distanceRange.max = 200;
-    if (followDistance < 150 || followDistance > 200) {
+    distanceRange.max = 400;
+    if (followDistance < 150 || followDistance > 400) {
       followDistance = 150;
       distanceRange.value = 150;
       distanceValue.innerText = 150;
