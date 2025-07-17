@@ -1,145 +1,137 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-<meta charset="UTF-8" />
-<title>无人机跟随，伴随，环绕演示</title>
-<style>
-  html, body {
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    font-family: sans-serif;
-    background: #f0f4f8;
-    position: relative;
-  }
-
-  h2 {
-    position: absolute;
-    top: 10px;
-    width: 100%;
-    text-align: center;
-    user-select: none;
-    margin: 0;
-    z-index: 10;
-  }
-
-  #modeButtons {
-    position: absolute;
-    top: 50px;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    z-index: 10;
-  }
-  .mode-btn { 
-    padding: 10px 20px; 
-    font-size: 16px; 
-    border: none; 
-    border-radius: 5px; 
-    cursor: pointer; 
-    background: #ddd;
-    color: #333;
-    transition: background-color 0.3s ease;
-  }
-  .mode-btn.active, .mode-btn:hover {
-    background: #0078d7;
-    color: white;
-  }
-
-  .person, .drone {
-    position: absolute;
-  }
-  .person {
-    width: 30px; height: 30px; border-radius: 50%;
-    background: #4caf50; color: white; 
-    display: flex; align-items: center; justify-content: center;
-    font-size: 14px; font-weight: bold; cursor: grab;
-    user-select: none;
-  }
-  .drone {
-    width: 40px; height: 40px;
-    background: url('无人机.png') no-repeat center center;
-    background-size: contain;
-    transform-origin: center;
-  }
-  .fov {
-    position: absolute;
-    top: 50%;
-    left: 100%;
-    width: 0;
-    height: 0;
-    transform: translate(-50%, -50%) rotate(90deg);
-    border-left: 20px solid transparent;
-    border-right: 20px solid transparent;
-    border-top: 50px solid rgba(0, 255, 0, 0.25);
-    pointer-events: none;
-  }
-
-  #controlsContainer {
-    position: absolute;
-    bottom: 10px;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    gap: 40px;
-    z-index: 10;
-  }
-
-  #distanceContainer {
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
-    font-size: 16px;
-  }
-
-  .dpad {
-    display: grid;
-    grid-template-columns: 50px 50px 50px;
-    grid-template-rows: 50px 50px 50px;
-    gap: 10px;
-  }
-  .dpad > div {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-
-  .control-btn { 
-    width: 50px; height: 50px;
-    font-size: 22px;
-    border: none;
-    border-radius: 50%;
-    background: linear-gradient(to bottom, #0078d7, #005fa3); 
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    color: white; 
-    cursor: pointer; 
-    user-select: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-  }
-  .control-btn:hover {
-    background: linear-gradient(to bottom, #005fa3, #004080);
-    box-shadow: 0 6px 12px rgba(0,0,0,0.3);
-  }
-
-  @media (max-width: 600px) {
-    #controlsContainer { gap: 20px; }
+  <meta charset="UTF-8" />
+  <title>无人机全屏悬浮控制 - 触摸支持 & 自适应</title>
+  <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: sans-serif;
+      background: #f0f4f8;
+      position: relative;
+    }
+    h2 {
+      position: absolute;
+      top: 10px;
+      width: 100%;
+      text-align: center;
+      user-select: none;
+      margin: 0;
+      z-index: 10;
+    }
+    #modeButtons {
+      position: absolute;
+      top: 50px;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      z-index: 10;
+    }
+    .mode-btn {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background: #ddd;
+      color: #333;
+      transition: background-color 0.3s ease;
+    }
+    .mode-btn.active, .mode-btn:hover {
+      background: #0078d7;
+      color: white;
+    }
+    .person, .drone {
+      position: absolute;
+    }
+    .person {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: #4caf50; color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: bold; cursor: grab;
+      user-select: none;
+    }
+    .drone {
+      width: 40px; height: 40px;
+      background: url('无人机.png') no-repeat center center;
+      background-size: contain;
+      transform-origin: center;
+    }
+    .fov {
+      position: absolute;
+      top: 50%;
+      left: 100%;
+      width: 0;
+      height: 0;
+      transform: translate(-50%, -50%) rotate(90deg);
+      border-left: 20px solid transparent;
+      border-right: 20px solid transparent;
+      border-top: 50px solid rgba(0, 255, 0, 0.25);
+      pointer-events: none;
+    }
+    #controlsContainer {
+      position: absolute;
+      bottom: 10px;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      z-index: 10;
+    }
+    #distanceContainer {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      font-size: 16px;
+    }
     .dpad {
-      grid-template-columns: 40px 40px 40px;
-      grid-template-rows: 40px 40px 40px;
-      gap: 6px;
+      display: grid;
+      grid-template-columns: 50px 50px 50px;
+      grid-template-rows: 50px 50px 50px;
+      gap: 10px;
+    }
+    .dpad > div {
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
     .control-btn {
-      width: 40px; height: 40px; font-size: 18px;
+      width: 50px; height: 50px;
+      font-size: 22px;
+      border: none;
+      border-radius: 50%;
+      background: linear-gradient(to bottom, #0078d7, #005fa3);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      color: white;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
     }
-  }
-</style>
+    .control-btn:hover {
+      background: linear-gradient(to bottom, #005fa3, #004080);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+    }
+    @media (max-width: 600px) {
+      #controlsContainer { gap: 20px; }
+      .dpad {
+        grid-template-columns: 40px 40px 40px;
+        grid-template-rows: 40px 40px 40px;
+        gap: 6px;
+      }
+      .control-btn {
+        width: 40px; height: 40px; font-size: 18px;
+      }
+    }
+  </style>
 </head>
 <body>
 
@@ -158,16 +150,14 @@
 
 <div id="controlsContainer">
   <div id="distanceContainer">
-    <div>距离: <span id="distanceValue">80</span></div>
-    <input type="range" id="distanceRange" min="50" max="200" value="80">
+    <div>距离: <span id="distanceValue">150</span></div>
+    <input type="range" id="distanceRange" min="150" max="200" value="150">
   </div>
-
   <div id="controls" class="dpad">
     <div></div><div><button class="control-btn" id="btnUp">↑</button></div><div></div>
     <div><button class="control-btn" id="btnLeft">←</button></div><div></div><div><button class="control-btn" id="btnRight">→</button></div>
     <div></div><div><button class="control-btn" id="btnDown">↓</button></div><div></div>
   </div>
-
   <div id="focusControls" style="display:none; gap: 40px;">
     <div class="dpad">
       <div></div><div><button class="control-btn" id="droneLeft">⟲</button></div><div></div>
@@ -195,12 +185,20 @@ const distanceValue = document.getElementById('distanceValue');
 
 let mode = "跟随";
 let personPos = { x: window.innerWidth/2 - 15, y: window.innerHeight/2 - 15 };
+let lastPersonPos = { ...personPos }; // 用于判断人运动方向
 let dronePos = { x: window.innerWidth/2 + 100, y: window.innerHeight/2 + 100 };
 let dragging = false;
 let moveIntervals = {}, droneMoveIntervals = {};
 let orbitAngle = 0, orbitRadius = 100;
-let followDistance = 80;
+let followDistance = 150; // 默认改成150
 let keysPressed = {};
+const minSafeDistance =80;
+
+// 初始化滑动条范围及初始值
+distanceRange.min = 150;
+distanceRange.max = 200;
+distanceRange.value = 150;
+distanceValue.innerText = followDistance;
 
 distanceRange.oninput = () => {
   followDistance = parseInt(distanceRange.value);
@@ -221,6 +219,7 @@ function animate() {
   moveDroneAuto();
   updateDroneOrientation();
   updatePositions();
+  lastPersonPos = { ...personPos }; // 保存上一个位置
   requestAnimationFrame(animate);
 }
 
@@ -228,8 +227,30 @@ function moveDroneAuto() {
   if (mode === "跟随") {
     const dx = personPos.x - dronePos.x;
     const dy = personPos.y - dronePos.y;
-    const distance = Math.sqrt(dx*dx + dy*dy);
-    if (distance > followDistance) {
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    const vx = personPos.x - lastPersonPos.x;
+    const vy = personPos.y - lastPersonPos.y;
+    const movementMagnitude = Math.sqrt(vx * vx + vy * vy);
+
+    if (distance < minSafeDistance && movementMagnitude > 0.5) {
+      // 计算人的运动方向（单位向量）
+      const dirX = vx / movementMagnitude;
+      const dirY = vy / movementMagnitude;
+
+      // 计算无人机相对于人运动方向的左右位置，决定避让方向
+      // 通过叉积判断无人机在人的左侧还是右侧
+      const cross = dirX * (dronePos.y - personPos.y) - dirY * (dronePos.x - personPos.x);
+
+      // 避让角度垂直于人的运动方向，且根据叉积符号选择方向，避免随机抖动
+      const avoidAngle = Math.atan2(-dirY, -dirX) + (cross > 0 ? -Math.PI / 2 : Math.PI / 2);
+
+      // 加大避让步长，并限制最大移动速度，避免跳跃过大
+      const avoidStep = Math.min(8, (minSafeDistance - distance) * 0.4);
+
+      dronePos.x += Math.cos(avoidAngle) * avoidStep;
+      dronePos.y += Math.sin(avoidAngle) * avoidStep;
+    } else if (distance > followDistance) {
       dronePos.x += (dx / distance) * (distance - followDistance) * 0.1;
       dronePos.y += (dy / distance) * (distance - followDistance) * 0.1;
     }
@@ -279,6 +300,26 @@ function updatePositions() {
   drone.style.top = dronePos.y + 'px';
 }
 
+// 方向按钮事件保留
+['Up','Down','Left','Right'].forEach(dir=>{
+  const btn = document.getElementById('btn'+dir);
+  btn.onmousedown = ()=>startContinuousMove(dir.toLowerCase(), false);
+  btn.onmouseup = ()=>stopContinuousMove(dir.toLowerCase(), false);
+  btn.onmouseleave = ()=>stopContinuousMove(dir.toLowerCase(), false);
+  btn.ontouchstart = (e)=>{ e.preventDefault(); startContinuousMove(dir.toLowerCase(), false); }
+  btn.ontouchend = ()=>stopContinuousMove(dir.toLowerCase(), false);
+  btn.ontouchcancel = ()=>stopContinuousMove(dir.toLowerCase(), false);
+});
+['Up','Down','Left','Right'].forEach(dir=>{
+  const btn = document.getElementById('drone'+dir);
+  btn.onmousedown = ()=>startContinuousMove(dir.toLowerCase(), true);
+  btn.onmouseup = ()=>stopContinuousMove(dir.toLowerCase(), true);
+  btn.onmouseleave = ()=>stopContinuousMove(dir.toLowerCase(), true);
+  btn.ontouchstart = (e)=>{ e.preventDefault(); startContinuousMove(dir.toLowerCase(), true); }
+  btn.ontouchend = ()=>stopContinuousMove(dir.toLowerCase(), true);
+  btn.ontouchcancel = ()=>stopContinuousMove(dir.toLowerCase(), true);
+});
+
 function startContinuousMove(dir, isDrone=false) {
   const step = 4;
   stopContinuousMove(dir, isDrone);
@@ -309,34 +350,28 @@ function stopContinuousMove(dir, isDrone=false) {
   else clearInterval(moveIntervals[dir]);
 }
 
-['Up','Down','Left','Right'].forEach(dir=>{
-  const btn = document.getElementById('btn'+dir);
-  btn.onmousedown = ()=>startContinuousMove(dir.toLowerCase(), false);
-  btn.onmouseup = ()=>stopContinuousMove(dir.toLowerCase(), false);
-  btn.onmouseleave = ()=>stopContinuousMove(dir.toLowerCase(), false);
-  btn.ontouchstart = (e)=>{ e.preventDefault(); startContinuousMove(dir.toLowerCase(), false); }
-  btn.ontouchend = ()=>stopContinuousMove(dir.toLowerCase(), false);
-  btn.ontouchcancel = ()=>stopContinuousMove(dir.toLowerCase(), false);
-});
-['Up','Down','Left','Right'].forEach(dir=>{
-  const btn = document.getElementById('drone'+dir);
-  btn.onmousedown = ()=>startContinuousMove(dir.toLowerCase(), true);
-  btn.onmouseup = ()=>stopContinuousMove(dir.toLowerCase(), true);
-  btn.onmouseleave = ()=>stopContinuousMove(dir.toLowerCase(), true);
-  btn.ontouchstart = (e)=>{ e.preventDefault(); startContinuousMove(dir.toLowerCase(), true); }
-  btn.ontouchend = ()=>stopContinuousMove(dir.toLowerCase(), true);
-  btn.ontouchcancel = ()=>stopContinuousMove(dir.toLowerCase(), true);
-});
-
 followBtn.onclick = () => { mode="跟随"; updateModeUI(); }
 accompanyBtn.onclick = () => { mode="伴随"; updateModeUI(); }
 focusBtn.onclick = () => { mode="聚焦"; updateModeUI(); }
+
 function updateModeUI() {
   followBtn.classList.toggle("active", mode==="跟随");
   accompanyBtn.classList.toggle("active", mode==="伴随");
+  focusBtn.classList.toggle("active", mode==="聚焦");
   focusControls.style.display = mode==="聚焦" ? "flex" : "none";
   distanceContainer.style.display = (mode==="跟随"||mode==="伴随") ? "flex" : "none";
+
+  if (mode === "跟随") {
+    distanceRange.min = 150;
+    distanceRange.max = 200;
+    if (followDistance < 150 || followDistance > 200) {
+      followDistance = 150;
+      distanceRange.value = 150;
+      distanceValue.innerText = 150;
+    }
+  }
 }
+
 updateModeUI();
 animate();
 </script>
